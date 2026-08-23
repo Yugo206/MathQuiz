@@ -231,8 +231,11 @@
             if (ndiv) ndiv.style.display = 'none';
         }
         function sign_up() {
+            console.log("Signing up form");
             const sign_up_div = document.getElementById("sign_up_div");
-            sign_up_div.display = "flex";
+            sign_up_div.style.display = "flex";
+            const header = document.getElementById("up");
+            header.style.display = "none";
         }
         function startloginscreen() {
             for (let i = 1; i <= 100; i++) {
@@ -1445,7 +1448,40 @@
             color: var(--wood);
             text-align: left;
         }
-
+        #sign_up_form label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--wood);
+            text-align: left;
+        }
+        #sign_up_form input[type=text] {
+            font-family: 'Poppins', sans-serif;
+            font-size: 16px;
+            padding: 12px 14px;
+            border-radius: 10px;
+            border: 2px solid var(--wood);
+            background: #FFFBF0;
+            color: var(--ink);
+        }
+        #sign_up_form input[type=password] {
+            font-family: 'Poppins', sans-serif;
+            font-size: 16px;
+            padding: 12px 14px;
+            border-radius: 10px;
+            border: 2px solid var(--wood);
+            background: #FFFBF0;
+            color: var(--ink);
+        }
+        #sign_up_form input[type=submit] {
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+            background: linear-gradient(180deg, var(--coral), #A63D1E);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            padding: 12px 20px;
+            cursor: pointer;
+        }
         #game_joining_form input[type=text] {
             font-family: 'Poppins', sans-serif;
             font-size: 16px;
@@ -1893,6 +1929,7 @@
                 <input type="text" id="pseudo" name="pseudo">
                 <label for="PSW">Password</label>
                 <input type="password" id="PSW" name="PSW">
+                <input type="submit">
             </form>
         </div>
         <div id="game_joining_form">

@@ -146,6 +146,7 @@ wss.on('connection', (ws) => {
           game_id: data.game_id,
           gameStarted: game.gameStarted,
           clients: publicClientList(game),
+          db_url: process.env.DATABASE_URL,
         });
         break;
       }

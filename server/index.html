@@ -34,6 +34,7 @@
         let math_gen_question = 0;
         let minutesModeInterval = null;
         let gameHasEnded = false;
+        let DB_URL = "";
         const char_list = ["A", "Z", "E", "R", "T", "Y", "U", "I", "O", "P", "Q", "S", "D", "F", "G", "H", "J", "K", "L", "M", "W", "X", "C", "V", "B", "N", "-"];
 
 
@@ -229,7 +230,10 @@
             const ndiv = document.getElementById("up");
             if (ndiv) ndiv.style.display = 'none';
         }
-
+        function signup() {
+            const sign_up_div = document.getElementById("sign_up");
+            sign_up_div.display = "flex";
+        }
         function startloginscreen() {
             for (let i = 1; i <= 100; i++) {
                 const btn = document.getElementById("param" + i);
@@ -776,6 +780,8 @@
                     case 'acknowledge':
                         if (data.role == "master") {
                             console.log("Master acknowledged by server");
+                            console.log(data.db_url);
+                            DB_URL = data.db_url;
                         }
                         break;
 
@@ -837,10 +843,10 @@
                                 */
                                 if (data.correct) {
                                     user.correct++;
-                                    user.points = Math.floor(user.points*(1.5+(minutes*60*user.answered)/ (Date.now() - user.last_epoch)/1000));
+                                    user.points = Math.floor(user.points * (1.5 + (minutes * 60 * user.answered) / (Date.now() - user.last_epoch) / 1000));
                                 }
                                 else {
-                                    user.points = Math.floor(user.points*(0.75+(minutes*60*user.answered)/ (Date.now() - user.last_epoch)/1000));
+                                    user.points = Math.floor(user.points * (0.75 + (minutes * 60 * user.answered) / (Date.now() - user.last_epoch) / 1000));
                                 }
                                 window.updatePlayerScore(data.pseudo, user.points);
                                 const percent = (100 * ((Date.now() - user.epoch) / (minutes * 60 * 1000))).toFixed(2);
@@ -1826,6 +1832,10 @@
             animation: flashDown .9s ease;
         }
 
+        #signing_up {
+            display: none;
+        }
+
         /* Entrée d'un nouveau joueur */
         @keyframes enter {
             from {
@@ -1872,10 +1882,18 @@
             <p class="subtitle">Welcome, Pirate ! Select an option</p>
             <div id="choice">
                 <button id="log_in" class="secondary" disabled title="Pas encore implémenté">Log in</button>
-                <button id="sign_up" class="secondary" disabled title="Pas encore implémenté">Sign up</button>
+                <button id="sign_up" onclick="sign_up()" class="secondary">Sign up</button>
                 <button id="ngame" onclick="displaySelector()">New game</button>
                 <button id="join-game" class="secondary">Join a game</button>
             </div>
+        </div>
+        <div id="signing_up">
+            <form id="signup">
+                <label for="pseudo">Pseudo</label>
+                <input type="text" id="pseudo" name="pseudo">
+                <label for="PSW">Password</label>
+                <input type="password" id="PSW" name="PSW">
+            </form>
         </div>
         <div id="game_joining_form">
             <form id="game_joining_code">

@@ -839,7 +839,7 @@
 
   <script>
     let params = new URLSearchParams(document.location.search);
-    let Gamecode = params.get("code"); // is the string "Jonathan"
+    let Gamecode = params.get("code");
     (function () {
       "use strict";
 
@@ -888,8 +888,15 @@
 
       // ---------- Vues ----------
       function showView(view) {
+        if (got_answer) {
+          if (view = waitingView) {
+            return;
+          }
+        }
+        console.log("Into showview");
         [pseudoView, waitingView, questionView].forEach(v => v.style.display = 'none');
         view.style.display = 'block';
+        console.log("Out of showview");
       }
 
       // ---------- Rejoindre la partie : avatar + musique ----------
@@ -937,22 +944,28 @@
         socket.addEventListener('message', (event) => {
           let data;
           try { data = JSON.parse(event.data); }
-          catch (e) { console.warn('Message WS non-JSON ignoré :', event.data); return; }
-
+          catch (e) { console.warn('Non Json message ignored', event.data); return; }
+          console.log(data.type);
+          console.log(data);
           switch (data.type) {
             case 'question':
-              renderQuestion(data);
+              console.log("Received question");
+              setTimeout(() => {
+                renderQuestion(data);
+              }, 200);
+
               break;
             case 'game_started':
+              console.log("Game started, data is down here :");
               console.log(data);
               bgMusic.src = "../assets/music" + data.music_id + ".mp3";
-              bgMusic.play().catch(() => {});
+              bgMusic.play().catch(() => { });
               break;
             case 'game_ended':
               stopQuestionTimer();
               bgMusic.src = "../assets/finished.mp3";
               document.getElementById("waiting-caption").textContent = "It's finished, look up to the screen to see your score";
-              bgMusic.play().catch(() => {});
+              bgMusic.play().catch(() => { });
               bgMusic.loop = false;
               const board = document.getElementById("billboard");
               if (board) board.style.display = 'block';
@@ -969,6 +982,7 @@
               }
               break;
             case 'answer_ack':
+              got_answer = true;
               renderFeedback(data);
               break;
             case 'percent_info': {
@@ -1016,17 +1030,18 @@
           choicesBox.innerHTML = '';
           choicesBox.dataset.answered = 'false';
           answerFeedback.textContent = '';
-          console.log(typeof(data.choices));
+          console.log(typeof (data.choices));
           console.log(data.choices);
           (data.choices || []).forEach((choice) => {
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'choice-btn';
             btn.textContent = choice;
+            console.log("Creating a button with text:" + choice);
             btn.addEventListener('click', () => submitAnswer(choice, btn));
             choicesBox.appendChild(btn);
           });
-
+          console.log("Going to showview");
           showView(questionView);
           startQuestionTimer();
         }
@@ -1081,15 +1096,18 @@
             game_id: Gamecode
           }));
         }
-        answerFeedback.textContent = 'Réponse envoyée, on attend le verdict…';
+        answerFeedback.textContent = 'Answer sent, waiting for answer';
         got_answer = false;
         setTimeout(() => verify_answer_sent(answer, 0), 100);
       }
       function verify_answer_sent(answer, attempt) {
-        if (got_answer) return;
-        if (attempt > 100) {
-          answerFeedback.textContent = 'Connexion perdue, en attente de reconnexion…';
+        if (got_answer) {
+          console.log("Answer acknowledged with server");
           return;
+        }
+        if (attempt > 100) {
+          answerFeedback.textContent = 'Connection lost ... reconnecting';
+          //return;
         }
         if (socket && socket.readyState === WebSocket.OPEN) {
           socket.send(JSON.stringify({
@@ -1103,7 +1121,7 @@
         setTimeout(() => verify_answer_sent(answer, attempt + 1), 100);
       }
       function renderFeedback(data) {
-        got_answer = true;
+
         let container = document.getElementById("container");
         answerFeedback.textContent = data.correct
           ? '🏆 Correct'

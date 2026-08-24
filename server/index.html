@@ -34,6 +34,7 @@
         let math_gen_question = 0;
         let minutesModeInterval = null;
         let gameHasEnded = false;
+        let DB_URL = "";
         const char_list = ["A", "Z", "E", "R", "T", "Y", "U", "I", "O", "P", "Q", "S", "D", "F", "G", "H", "J", "K", "L", "M", "W", "X", "C", "V", "B", "N", "-"];
 
 
@@ -186,7 +187,11 @@
             const codeEl = document.getElementById("inputgameCode");
             if (codeEl) {
                 codeEl.textContent =
-                    `Scan QR code or launch ${window.location.origin} , choose Join a game and enter code : ${Gamecode}`;
+                    `Scan QR code or launch ${window.location.origin} , choose Join a game and enter code : `;
+            }
+            const placeholderEl = document.getElementById("code_placeholder");
+            if (placeholderEl) {
+                placeholderEl.textContent = Gamecode;
             }
             const qrDiv = document.getElementById("qrcode");
             if (qrDiv) {
@@ -243,7 +248,13 @@
             const ndiv = document.getElementById("up");
             if (ndiv) ndiv.style.display = 'none';
         }
-
+        function sign_up() {
+            console.log("Signing up form");
+            const sign_up_div = document.getElementById("sign_up_div");
+            sign_up_div.style.display = "flex";
+            const header = document.getElementById("up");
+            header.style.display = "none";
+        }
         function startloginscreen() {
             for (let i = 1; i <= 100; i++) {
                 const btn = document.getElementById("param" + i);
@@ -658,6 +669,7 @@
                 setTimeout(() => {
                     for (const [key, value] of progression.entries()) {
                         value.epoch = Date.now();
+                        value.last_epoch = Date.now();
 
                         // Le bateau doit exister AVANT le premier envoi de question :
                         // une réponse trop rapide pourrait sinon chercher un élément
@@ -793,6 +805,8 @@
                     case 'acknowledge':
                         if (data.role == "master") {
                             console.log("Master acknowledged by server");
+                            console.log(data.db_url);
+                            DB_URL = data.db_url;
                         }
                         break;
 
@@ -803,12 +817,16 @@
                         break;
 
                     case 'client_joined':
+                        if (verify_game_ended()) {
+                            break;
+                        }
                         console.log("Client joined: ", data.pseudo, " with id: ", data.id);
                         progression.set(data.pseudo, {
                             epoch: 0,
                             correct: 0,
                             answered: 0,
-                            points: 0,
+                            points: 5,
+                            last_epoch: 0,
                         });
 
                         window.addPlayer({
@@ -876,9 +894,19 @@
                                 console.log(data.pseudo + " : temps écoulé, réponse non comptabilisée");
                             } else {
                                 user.answered++;
+                                /*
+                                For time question
+                                CORRECT:
+                                POINTS = POINTS*(1+(TEMPS*Q_REPONDUE)/TEMPS_REPONSE_EN_S)
+                                UNCORRECT
+                                POINTS = POINTS*(TEMPS*Q_REPONDUE)/TEMPS_REPONSE_EN_S
+                                */
                                 if (data.correct) {
                                     user.correct++;
-                                    user.points = 200 * user.correct / user.answered;
+                                    user.points = Math.floor(user.points * (1.5 + (minutes * 60 * user.answered) / (Date.now() - user.last_epoch) / 1000));
+                                }
+                                else {
+                                    user.points = Math.floor(user.points * (0.75 + (minutes * 60 * user.answered) / (Date.now() - user.last_epoch) / 1000));
                                 }
                                 window.updatePlayerScore(data.pseudo, user.points);
                                 const percent = (100 * ((Date.now() - user.epoch) / (minutes * 60 * 1000))).toFixed(2);
@@ -890,6 +918,9 @@
                                     percent: percent,
                                     game_id: Gamecode
                                 }));
+
+
+
                                 setTimeout(() => send_question(data.pseudo), 250);
                             }
                         } else {
@@ -934,7 +965,7 @@
                             window.updatePlayerScore(data.pseudo, Math.floor(user.points));
 
                             if (user.answered < question_number) {
-                                setTimeout(() => send_question(data.pseudo), 250);
+                                setTimeout(() => send_question(data.pseudo), 1);
                             } else {
                                 console.log("Player finished all questions: ", data.pseudo);
                                 const victorySound = sound_effects_on
@@ -1201,10 +1232,10 @@
             })();
 
         });
-        function ngame_after(){
+        function ngame_after() {
             window.location.reload();
         }
-</script>
+    </script>
     <style>
         :root {
             --sea-deep: #072D3B;
@@ -1296,9 +1327,11 @@
         #billboard {
             display: none;
         }
+
         #new_game_after {
             display: none;
         }
+
         #up {
             display: flex;
             flex-direction: column;
@@ -1463,12 +1496,14 @@
             display: none;
             width: 100%;
             max-width: 320px;
+            justify-content: center;
         }
 
         #game_joining_form form {
             display: flex;
             flex-direction: column;
             gap: 12px;
+            justify-content: center;
         }
 
         #game_joining_form label {
@@ -1477,7 +1512,40 @@
             color: var(--wood);
             text-align: left;
         }
-
+        #sign_up_form label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--wood);
+            text-align: left;
+        }
+        #sign_up_form input[type=text] {
+            font-family: 'Poppins', sans-serif;
+            font-size: 16px;
+            padding: 12px 14px;
+            border-radius: 10px;
+            border: 2px solid var(--wood);
+            background: #FFFBF0;
+            color: var(--ink);
+        }
+        #sign_up_form input[type=password] {
+            font-family: 'Poppins', sans-serif;
+            font-size: 16px;
+            padding: 12px 14px;
+            border-radius: 10px;
+            border: 2px solid var(--wood);
+            background: #FFFBF0;
+            color: var(--ink);
+        }
+        #sign_up_form input[type=submit] {
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+            background: linear-gradient(180deg, var(--coral), #A63D1E);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            padding: 12px 20px;
+            cursor: pointer;
+        }
         #game_joining_form input[type=text] {
             font-family: 'Poppins', sans-serif;
             font-size: 16px;
@@ -1886,6 +1954,10 @@
             animation: flashDown .9s ease;
         }
 
+        #sign_up_div {
+            display: none;
+        }
+
         /* Entrée d'un nouveau joueur */
         @keyframes enter {
             from {
@@ -1932,10 +2004,19 @@
             <p class="subtitle">Welcome, Pirate ! Select an option</p>
             <div id="choice">
                 <button id="log_in" class="secondary" disabled title="Pas encore implémenté">Log in</button>
-                <button id="sign_up" class="secondary" disabled title="Pas encore implémenté">Sign up</button>
+                <button id="sign_up" onclick="sign_up()" class="secondary">Sign up</button>
                 <button id="ngame" onclick="displaySelector()">New game</button>
                 <button id="join-game" class="secondary">Join a game</button>
             </div>
+        </div>
+        <div id="sign_up_div">
+            <form id="signup">
+                <label for="pseudo">Pseudo</label>
+                <input type="text" id="pseudo" name="pseudo">
+                <label for="PSW">Password</label>
+                <input type="password" id="PSW" name="PSW">
+                <input type="submit">
+            </form>
         </div>
         <div id="game_joining_form">
             <form id="game_joining_code">
@@ -2017,6 +2098,7 @@
         <h2>Waiting for players</h2>
         <div id="qrcode"></div>
         <h4 id="inputgameCode"></h4>
+        <h2 id="code_placeholder"></h2>
         <ul id="playerList"></ul>
         <p id="startGameWarning" class="form-warning"></p>
         <button id="startGameBtn">Start game</button>
